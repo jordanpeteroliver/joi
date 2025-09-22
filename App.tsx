@@ -1,8 +1,8 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { Scene, Option, Fantasy } from './types';
 import { GameStatus, Difficulty } from './types';
-import { getInitialScene, WIN_THRESHOLD, DIFFICULTY_SETTINGS } from './constants';
+// FIX: Removed unused 'getInitialScene' import which was causing an error as it does not exist.
+import { WIN_THRESHOLD, DIFFICULTY_SETTINGS } from './constants';
 import { generateNarrative, generateImage } from './services/geminiService';
 import SceneComponent from './components/Scene';
 import OptionsComponent from './components/Options';
@@ -26,7 +26,8 @@ const App: React.FC = () => {
   const [nameInputValue, setNameInputValue] = useState<string>('');
   const [ageDenied, setAgeDenied] = useState<boolean>(false);
   const [excitement, setExcitement] = useState<number>(DIFFICULTY_SETTINGS.normal.initialExcitement);
-  const [scene, setScene] = useState<Scene>(getInitialScene(playerName));
+  // FIX: Initialized scene state with a default empty scene object instead of calling the non-existent 'getInitialScene'.
+  const [scene, setScene] = useState<Scene>({ narrative: '', options: [] });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [endMessage, setEndMessage] = useState<string>('');
@@ -159,24 +160,32 @@ const App: React.FC = () => {
     });
   }, [ambientVolume]);
 
-  useEffect(() => {
-    Object.values(sfxAudioRefs.current).forEach(audio => {
-      audio.volume = sfxVolume;
-    });
-  }, [sfxVolume]);
-
   // Game state audio effects
   useEffect(() => {
     const audios = ambientAudioRefs.current;
+    const timeoutIds: NodeJS.Timeout[] = [];
+
     if (gameStatus === GameStatus.Playing) {
-      audios.forEach(audio => {
-        audio.play().catch(e => console.error("Ambient audio failed to play:", e));
+      audios.forEach((audio, index) => {
+        if (audio.paused) { // Only play if not already playing
+          // Add a random delay to stagger the start times for a more natural soundscape
+          const delay = Math.random() * 500 * index;
+          const timeoutId = setTimeout(() => {
+            audio.play().catch(e => console.error("Ambient audio failed to play:", e));
+          }, delay);
+          timeoutIds.push(timeoutId);
+        }
       });
     } else {
       audios.forEach(audio => {
         audio.pause();
       });
     }
+
+    // Cleanup function to clear timeouts if the effect re-runs or component unmounts
+    return () => {
+      timeoutIds.forEach(clearTimeout);
+    };
   }, [gameStatus]);
 
   useEffect(() => {
