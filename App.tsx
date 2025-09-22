@@ -80,9 +80,9 @@ const App: React.FC = () => {
   useEffect(() => {
     // Ambient Sounds
     const audioSources = [
-      { src: 'https://soundimage.org/wp-content/uploads/2016/03/Future-City-Ambience-1.mp3' }, // Cyberpunk City Ambience
-      { src: 'https://soundimage.org/wp-content/uploads/2020/01/Dark-Ambience.mp3' }, // Dark Ambient
-      { src: 'https://soundimage.org/wp-content/uploads/2017/04/Wind-Sound-Effect.mp3' }  // Wind Sound Effect
+      { src: 'https://cdn.pixabay.com/audio/2023/08/17/audio_c3e8a4d257.mp3' }, // Cyberpunk City Ambience
+      { src: 'https://cdn.pixabay.com/audio/2021/08/09/audio_d062e58981.mp3' }, // Dark Ambient
+      { src: 'https://cdn.pixabay.com/audio/2022/07/04/audio_321c25091a.mp3' }  // Wind Sound Effect
     ];
     
     ambientAudioRefs.current = audioSources.map(source => {
@@ -94,9 +94,9 @@ const App: React.FC = () => {
 
     // Sound Effects
     const sfxSources: { [key: string]: string } = {
-      slap: 'https://cdn.pixabay.com/audio/2022/03/15/audio_22533230c1.mp3', // Body Slap
-      moan: 'https://cdn.pixabay.com/audio/2023/11/26/audio_9592f654b9.mp3', // Female Moan
-      wet: 'https://cdn.pixabay.com/audio/2022/11/19/audio_24483161ce.mp3'  // Slime Squish
+      slap: 'https://cdn.pixabay.com/audio/2022/04/18/audio_0310217d83.mp3', // Body Slap
+      moan: 'https://cdn.pixabay.com/audio/2022/03/29/audio_8453d1279b.mp3', // Female Sigh (as Moan)
+      wet: 'https://cdn.pixabay.com/audio/2021/08/04/audio_16cc99f36f.mp3'  // Slime Squish
     };
 
     Object.keys(sfxSources).forEach(key => {

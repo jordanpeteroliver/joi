@@ -1,3 +1,6 @@
+
+import type { Scene as VercelScene } from '@vercel/ai-react';
+
 export enum GameStatus {
   Menu = 'menu',
   Playing = 'playing',
@@ -24,6 +27,8 @@ export interface NarrativeResponse {
   winMessage?: string;
   loseMessage?: string;
   timerChange?: number;
+  // FIX: Corrected the type definition and added a semicolon.
   hapticFeedback?: 'light' | 'strong';
-  sfx?: 'slap' | 'moan' | 'wet';
+  // FIX: Added the missing 'sfx' property to match its usage.
+  sfx?: string;
 }
