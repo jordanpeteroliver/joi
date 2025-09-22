@@ -1,6 +1,7 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import type { NarrativeResponse } from '../types';
-import { GEMINI_TEXT_MODEL, GEMINI_IMAGE_MODEL, JOYCE_IMAGE_BASE_PROMPT } from '../constants';
+import type { NarrativeResponse, Difficulty } from '../types';
+import { GEMINI_TEXT_MODEL, GEMINI_IMAGE_MODEL, JOYCE_IMAGE_BASE_PROMPT, DIFFICULTY_SETTINGS } from '../constants';
 
 if (!process.env.API_KEY) {
     console.error("API_KEY environment variable not set.");
@@ -43,7 +44,7 @@ const responseSchema: any = {
     },
     winMessage: {
         type: Type.STRING,
-        description: "An explicit message for a 'win' state. E.g., 'Ela goza, gritando seu nome. 'Me enche, Pedro... enche-me com a sua porra!' Você a joga na parede e a fode até o amanhecer.'"
+        description: "An explicit message for a 'win' state. E.g., 'Ela goza, gritando seu nome. 'Me enche, [PLAYER_NAME]... enche-me com a sua porra!' Você a joga na parede e a fode até o amanhecer.'"
     },
     loseMessage: {
         type: Type.STRING,
@@ -67,36 +68,51 @@ const responseSchema: any = {
 
 
 export const generateNarrative = async (
+  playerName: string,
   currentNarrative: string,
   playerChoice: string,
   currentExcitement: number,
-  remainingTime: number
+  remainingTime: number,
+  difficulty: Difficulty,
 ): Promise<NarrativeResponse> => {
+  const difficultyModifier = DIFFICULTY_SETTINGS[difficulty].promptModifier;
+
   const prompt = `
-    Contexto do Jogo BDSM Picante:
-    - O jogador é 'Pedro', um dominante. Ele está encurralando sua vizinha submissa, 'Joyce'.
-    - O objetivo é aumentar o "tesão" dela acima de 85 para um clímax ("win").
-    - O namorado dela está dormindo lá dentro. Barulho pode acordá-lo ('lose').
-    - Nível de Tesão atual: ${currentExcitement}.
-    - Tempo restante: ${remainingTime} segundos.
+    Você é um mestre de jogo para um RPG erótico BDSM explícito.
+    Sua tarefa é continuar a história, respondendo em um formato JSON específico.
 
-    Cena Anterior:
-    "${currentNarrative}"
+    **CONTEXTO DO JOGO:**
+    - Jogador: '${playerName}', o Dominante.
+    - Personagem: 'Joyce', a submissa.
+    - Cenário: Varia de acordo com a fantasia, mas o objetivo é dominar Joyce.
+    - Objetivo: Aumentar o Tesão (excitement) de Joyce para 85+ para vencer. Risco de falha existe (ex: namorado acordar).
 
-    Escolha do Jogador (Pedro):
-    "${playerChoice}"
+    **ESTADO ATUAL:**
+    - Nível de Tesão: ${currentExcitement}/100
+    - Tempo Restante: ${remainingTime} segundos.
+    - Dificuldade: ${difficulty}. ${difficultyModifier}
 
-    Sua Tarefa:
-    Continue a história de forma extremamente explícita e erótica, dentro de uma fantasia BDSM. Descreva a reação de Joyce de forma visceral e submissa.
-    - A narrativa deve ser suja, com linguagem forte e conotação sexual intensa (pau, buceta, porra, etc.), mas de forma criativa.
-    - Joyce deve gemer, implorar e reagir fisicamente às ações de Pedro.
-    - Crie eventos que aumentem a tensão, como ela quase gritando de prazer, ou barulhos de dentro.
-    - Se a ação for um impacto (tapa, estocada), adicione 'hapticFeedback: "strong"'. Para provocações, use 'light'.
-    - Use SFX para aumentar a imersão: 'slap' para tapas, 'moan' para gemidos, 'wet' para sons de sexo molhado.
-    - Altere o tempo: Se a ação do jogador for barulhenta ou arriscada (ex: um tapa alto), subtraia 10 segundos ('timerChange: -10'). Se for uma ação sedutora que a distrai e ganha tempo, adicione 5 segundos ('timerChange: 5'). Caso contrário, omita 'timerChange'.
-    - Se o Tesão for > 85, crie um 'win' state onde Pedro a enche de porra.
-    - Forneça 3 novas opções explícitas para o jogador, cada uma começando com um emoji (✋, 👅, 🍆, ⛓️).
-    - Responda APENAS com o objeto JSON formatado.
+    **HISTÓRICO DA CENA:**
+    - Narrativa Anterior: "${currentNarrative}"
+    - Ação do Jogador: "${playerChoice}"
+
+    **SUA TAREFA (PROCESSO DE PENSAMENTO):**
+    1.  **Analisar a Ação:** Considere a ação do jogador ("${playerChoice}"). É dominante, terna, arriscada, barulhenta? Como Joyce, em seu estado atual de tesão, reagiria a isso?
+    2.  **Escalar a Narrativa:** Aumente a intensidade. A história deve se tornar progressivamente mais explícita e suja. Descreva a reação física e emocional de Joyce de forma visceral. Use linguagem sexual forte e criativa (pau, buceta, porra, etc.).
+    3.  **Determinar Consequências:**
+        - **Tesão:** Calcule a mudança no tesão. Uma ação forte e dominante aumenta muito (+15-20). Uma provocação leve, menos (+5-10). Uma ação ruim, diminui (-5-10).
+        - **Tempo:** A ação foi barulhenta (um tapa alto, um grito)? Subtraia tempo (-10s). Foi uma distração sedutora que faz o tempo passar mais rápido para eles? Adicione tempo (+5s). Se não, não altere o tempo.
+        - **Feedback:** A ação envolveu um impacto físico (tapa, estocada)? Adicione \`hapticFeedback: "strong"\`. Uma provocação? \`hapticFeedback: "light"\`.
+        - **SFX:** A ação produziria um som distinto? Use 'slap', 'moan', ou 'wet' quando apropriado para imersão.
+    4.  **Verificar Condições de Fim de Jogo:**
+        - O tesão total ultrapassou 85? Defina \`gameState: "win"\` e escreva uma cena de clímax explícita para \`winMessage\`.
+        - A ação foi tão arriscada que gerou uma falha (ex: acordou o namorado)? Defina \`gameState: "lose"\` e escreva uma mensagem de falha para \`loseMessage\`.
+        - Caso contrário, \`gameState: "continue"\`.
+    5.  **Criar Novas Opções:** Gere 3 novas opções explícitas e distintas para o jogador que sigam logicamente a nova narrativa. Cada uma deve começar com um emoji relevante (✋, 👅, 🍆, ⛓️).
+    6.  **Gerar Emoção para Imagem:** Descreva a emoção facial de Joyce em uma frase curta e SFW para a geração de imagem (ex: 'mordendo o lábio em antecipação', 'olhar de prazer intenso').
+
+    **SAÍDA:**
+    Responda APENAS com o objeto JSON formatado de acordo com o schema fornecido. Não inclua texto ou explicações fora do JSON.
   `;
 
   try {
@@ -143,7 +159,8 @@ export const generateImage = async (emotionPrompt: string): Promise<string> => {
       return `data:image/jpeg;base64,${base64ImageBytes}`;
     }
     throw new Error("No image generated");
-  } catch (error) {
+  } catch (error)
+    {
     console.error("Error generating image:", error);
     return "https://picsum.photos/600/800"; // Fallback image
   }

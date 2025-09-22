@@ -1,8 +1,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { Scene, Option } from './types';
-import { GameStatus } from './types';
-import { INITIAL_SCENE, INITIAL_EXCITEMENT, WIN_THRESHOLD, INITIAL_TIMER } from './constants';
+import type { Scene, Option, Fantasy } from './types';
+import { GameStatus, Difficulty } from './types';
+import { getInitialScene, WIN_THRESHOLD, DIFFICULTY_SETTINGS } from './constants';
 import { generateNarrative, generateImage } from './services/geminiService';
 import SceneComponent from './components/Scene';
 import OptionsComponent from './components/Options';
@@ -11,6 +11,7 @@ import SparkleIcon from './components/icons/SparkleIcon';
 import TimerDisplay from './components/TimerDisplay';
 import SettingsIcon from './components/icons/SettingsIcon';
 import SettingsModal from './components/SettingsModal';
+import FantasyMenu from './components/FantasyMenu';
 
 
 declare global {
@@ -20,17 +21,22 @@ declare global {
 }
 
 const App: React.FC = () => {
-  const [gameStatus, setGameStatus] = useState<GameStatus>(GameStatus.Menu);
-  const [excitement, setExcitement] = useState<number>(INITIAL_EXCITEMENT);
-  const [scene, setScene] = useState<Scene>(INITIAL_SCENE);
+  const [gameStatus, setGameStatus] = useState<GameStatus>(GameStatus.AgeCheck);
+  const [playerName, setPlayerName] = useState<string>('Pedro');
+  const [nameInputValue, setNameInputValue] = useState<string>('');
+  const [ageDenied, setAgeDenied] = useState<boolean>(false);
+  const [excitement, setExcitement] = useState<number>(DIFFICULTY_SETTINGS.normal.initialExcitement);
+  const [scene, setScene] = useState<Scene>(getInitialScene(playerName));
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState<boolean>(false);
   const [endMessage, setEndMessage] = useState<string>('');
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [timer, setTimer] = useState<number>(INITIAL_TIMER);
+  const [timer, setTimer] = useState<number>(DIFFICULTY_SETTINGS.normal.initialTimer);
   const [showEcstasyPulse, setShowEcstasyPulse] = useState<boolean>(false);
   const [lastTimerChange, setLastTimerChange] = useState<number | null>(null);
   const [excitementFeedback, setExcitementFeedback] = useState<string | null>(null);
+  const [difficulty, setDifficulty] = useState<Difficulty>(Difficulty.Normal);
+  const [currentFantasy, setCurrentFantasy] = useState<Fantasy | null>(null);
   
   // Audio State
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
@@ -45,6 +51,24 @@ const App: React.FC = () => {
   const ambientAudioRefs = useRef<HTMLAudioElement[]>([]);
   const sfxAudioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
   
+    const playUISFX = useCallback((sfxKey: 'hover' | 'click' | 'open' | 'close') => {
+        if (sfxAudioRefs.current[sfxKey]) {
+            const audio = sfxAudioRefs.current[sfxKey];
+            audio.currentTime = 0;
+            audio.play().catch(e => console.error(`UI SFX '${sfxKey}' failed to play:`, e));
+        }
+    }, []);
+
+    const handleOpenSettings = () => {
+        playUISFX('open');
+        setIsSettingsOpen(true);
+    };
+
+    const handleCloseSettings = () => {
+        playUISFX('close');
+        setIsSettingsOpen(false);
+    };
+
   // Audio Control Handlers
   const handleAmbientVolumeChange = (volume: number) => {
     setAmbientVolume(volume);
@@ -75,34 +99,52 @@ const App: React.FC = () => {
       setSfxVolume(lastSfxVolume > 0 ? lastSfxVolume : 0.5);
     }
   };
+  
+  const playSFX = useCallback((sfxKey?: string) => {
+    if (sfxKey && sfxAudioRefs.current[sfxKey]) {
+        const audio = sfxAudioRefs.current[sfxKey];
+        audio.currentTime = 0;
+        audio.play().catch(e => console.error(`SFX '${sfxKey}' failed to play:`, e));
+    }
+  }, []);
 
   // Audio Initialization
   useEffect(() => {
     // Ambient Sounds
     const audioSources = [
-      { src: 'https://cdn.pixabay.com/audio/2023/08/17/audio_c3e8a4d257.mp3' }, // Cyberpunk City Ambience
-      { src: 'https://cdn.pixabay.com/audio/2021/08/09/audio_d062e58981.mp3' }, // Dark Ambient
-      { src: 'https://cdn.pixabay.com/audio/2022/07/04/audio_321c25091a.mp3' }  // Wind Sound Effect
+      { src: 'https://cdn.pixabay.com/download/audio/2022/11/22/audio_24926ccb2c.mp3' }, // Cyberpunk City Ambience
+      { src: 'https://cdn.pixabay.com/download/audio/2022/08/25/audio_51a296242c.mp3' }, // Dark Ambient
+      { src: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_b796328bc1.mp3' }  // Wind Sound Effect
     ];
     
     ambientAudioRefs.current = audioSources.map(source => {
       const audio = new Audio(source.src);
       audio.loop = true;
+      audio.preload = 'auto';
+      audio.crossOrigin = 'anonymous';
       audio.onerror = () => console.error(`Error loading ambient audio: ${source.src}`);
+      audio.load();
       return audio;
     });
 
     // Sound Effects
     const sfxSources: { [key: string]: string } = {
-      slap: 'https://cdn.pixabay.com/audio/2022/04/18/audio_0310217d83.mp3', // Body Slap
-      moan: 'https://cdn.pixabay.com/audio/2022/03/29/audio_8453d1279b.mp3', // Female Sigh (as Moan)
-      wet: 'https://cdn.pixabay.com/audio/2021/08/04/audio_16cc99f36f.mp3'  // Slime Squish
+      slap: 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_a1329c4d29.mp3',
+      moan: 'https://cdn.pixabay.com/download/audio/2022/04/07/audio_8221764121.mp3',
+      wet: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_5296068212.mp3',
+      hover: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_2198158b39.mp3',
+      click: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_28b18f0be8.mp3',
+      open: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c37d92c72b.mp3',
+      close: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c37d92c72b.mp3',
     };
 
-    Object.keys(sfxSources).forEach(key => {
-      const audio = new Audio(sfxSources[key]);
-      audio.onerror = () => console.error(`Error loading SFX: ${key} from ${sfxSources[key]}`);
-      sfxAudioRefs.current[key] = audio;
+    Object.entries(sfxSources).forEach(([key, src]) => {
+        const audio = new Audio(src);
+        audio.preload = 'auto';
+        audio.crossOrigin = 'anonymous';
+        audio.onerror = () => console.error(`Error loading SFX: ${key} from ${src}`);
+        audio.load();
+        sfxAudioRefs.current[key] = audio;
     });
 
     return () => {
@@ -184,7 +226,7 @@ const App: React.FC = () => {
       setTimer(prev => {
         if (prev <= 1) {
           clearInterval(timerIntervalRef.current!);
-          const endMsg = "O tempo acabou! Você ouve o namorado dela se mexendo. Joyce te empurra, com os olhos cheios de pânico e desejo frustrado. 'Você precisa ir. Agora!'";
+          const endMsg = `O tempo acabou! Você ouve um barulho de dentro. Joyce te empurra, com os olhos cheios de pânico e desejo frustrado. 'Você precisa ir. Agora!'`;
           setEndMessage(endMsg);
           setGameStatus(GameStatus.Lost);
           speak(endMsg);
@@ -201,54 +243,47 @@ const App: React.FC = () => {
     }
   };
 
-  const startGame = useCallback(async () => {
+  const startGame = useCallback(async (fantasy: Fantasy) => {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     setGameStatus(GameStatus.Loading);
-    setTimer(INITIAL_TIMER);
+    
+    const settings = DIFFICULTY_SETTINGS[fantasy.difficulty];
+    setDifficulty(fantasy.difficulty);
+    setCurrentFantasy(fantasy);
+    setTimer(settings.initialTimer);
+    setExcitement(settings.initialExcitement);
+    
     setImageLoading(true);
     setShowEcstasyPulse(false);
-    setExcitement(INITIAL_EXCITEMENT);
-    setScene(INITIAL_SCENE);
+
+    // Replace placeholder in narrative with actual player name
+    const initialNarrative = fantasy.initialScene.narrative.replace('PLAYER_NAME', playerName);
+    const initialScene = { ...fantasy.initialScene, narrative: initialNarrative };
+
+    setScene(initialScene);
     setLastTimerChange(null);
     const initialImage = await generateImage(`with an inviting, devoted smile`);
     setImageUrl(initialImage);
     setImageLoading(false);
     setGameStatus(GameStatus.Playing);
-    speak(INITIAL_SCENE.narrative);
+    speak(initialScene.narrative);
     startTimer();
-  }, [speak, startTimer]);
+  }, [speak, startTimer, playerName]);
 
   const handleOptionSelect = useCallback(async (option: Option) => {
+    playUISFX('click');
     setGameStatus(GameStatus.Loading);
     stopTimer();
     setLastTimerChange(null);
     
-    const response = await generateNarrative(scene.narrative, option.text, excitement, timer);
+    const response = await generateNarrative(playerName, scene.narrative, option.text, excitement, timer, difficulty);
     
     if ('vibrate' in navigator) {
       if (response.hapticFeedback === 'strong') navigator.vibrate(200);
       else if (response.hapticFeedback === 'light') navigator.vibrate(50);
     }
-
-    // Enhanced SFX logic: Play based on AI hint or keyword detection in narrative
-    let sfxToPlay: string | undefined = response.sfx;
-
-    if (!sfxToPlay) {
-      const combinedText = (response.narrative + ' ' + option.text).toLowerCase();
-      if (/\b(tapa|bateu|estalo|esbofeteou|slap)\b/.test(combinedText)) {
-        sfxToPlay = 'slap';
-      } else if (/\b(gemeu|gemido|arfa|arfar|suspira|suspirou|moan)\b/.test(combinedText)) {
-        sfxToPlay = 'moan';
-      } else if (/\b(molhada|úmida|escorrendo|encharcada|squish|wet)\b/.test(combinedText)) {
-        sfxToPlay = 'wet';
-      }
-    }
-
-    if (sfxToPlay && sfxAudioRefs.current[sfxToPlay]) {
-      const audio = sfxAudioRefs.current[sfxToPlay];
-      audio.currentTime = 0;
-      audio.play().catch(e => console.error(`SFX '${sfxToPlay}' failed to play:`, e));
-    }
+    
+    playSFX(response.sfx);
 
     const oldExcitement = excitement;
     const newExcitement = Math.max(0, Math.min(100, excitement + response.excitementChange));
@@ -268,9 +303,9 @@ const App: React.FC = () => {
     }
 
     if (response.gameState === 'win' || newExcitement >= WIN_THRESHOLD) {
-      const winMessage = response.winMessage || 'Você a dominou completamente!';
-      setEndMessage(winMessage);
-      speak(winMessage);
+      const winMessage = response.winMessage || `Você a dominou completamente!`;
+      setEndMessage(winMessage.replace('[PLAYER_NAME]', playerName));
+      speak(winMessage.replace('[PLAYER_NAME]', playerName));
       const winImage = await generateImage(`an expression of pure ecstasy, utterly captivated`);
       setImageUrl(winImage);
       setGameStatus(GameStatus.Won);
@@ -297,8 +332,13 @@ const App: React.FC = () => {
 
     setGameStatus(GameStatus.Playing);
     startTimer();
-  }, [scene.narrative, excitement, speak, timer, startTimer]);
+  }, [scene.narrative, excitement, timer, difficulty, speak, startTimer, playSFX, playerName, playUISFX]);
   
+  const handleOptionHover = (text: string) => {
+    playUISFX('hover');
+    speak(text);
+  }
+
   useEffect(() => {
     if (excitementFeedback) {
       const timer = setTimeout(() => setExcitementFeedback(null), 1500); // Match animation duration
@@ -321,31 +361,69 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (gameStatus) {
-      case GameStatus.Menu:
+      case GameStatus.AgeCheck:
+        if (ageDenied) {
+          return (
+            <div className="text-center text-white flex flex-col items-center gap-6 p-4">
+              <h1 className="text-5xl font-bold">Acesso Negado</h1>
+              <p className="text-xl max-w-2xl text-white/80">
+                Você precisa ser maior de 18 anos para acessar este conteúdo.
+              </p>
+            </div>
+          );
+        }
         return (
           <div className="text-center text-white flex flex-col items-center gap-6 p-4">
-            <h1 className="text-6xl font-bold">RPG Flirty Anatômico</h1>
-            <h2 className="text-3xl text-pink-300">Versão Selvagem e Overclockada</h2>
+            <h1 className="text-5xl font-bold">Verificação de Idade</h1>
             <p className="text-xl max-w-2xl text-white/80">
-              Assuma o controle na varanda com sua vizinha devota, Joyce. O namorado dela dorme lá dentro. Suas escolhas dominantes determinarão se a noite termina em êxtase... ou em desastre.
+              Este jogo contém conteúdo adulto explícito. Por favor, confirme que você tem 18 anos ou mais para continuar.
             </p>
-            <div className="flex items-center gap-4">
+            <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
               <button
-                onClick={startGame}
-                className="mt-4 px-12 py-4 text-xl font-bold text-white bg-pink-600 rounded-lg shadow-lg hover:bg-pink-700 transition-transform transform hover:scale-105"
+                onClick={() => { playUISFX('click'); setGameStatus(GameStatus.NameInput); }}
+                className="px-8 py-3 text-lg font-bold text-white bg-green-600/80 rounded-lg shadow-lg hover:bg-green-700/80 transition-transform transform hover:scale-105 border-2 border-green-400/50"
               >
-                Começar Jogo
+                Sim, tenho 18 anos ou mais
               </button>
               <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="mt-4 px-4 py-4 text-xl font-bold text-white bg-gray-700/50 rounded-lg shadow-lg hover:bg-gray-600/70 transition-transform transform hover:scale-105"
-                aria-label="Configurações de Áudio"
+                onClick={() => { playUISFX('click'); setAgeDenied(true); }}
+                className="px-8 py-3 text-lg font-bold text-white bg-red-700/90 rounded-lg shadow-lg hover:bg-red-800/90 transition-transform transform hover:scale-105 border-2 border-red-500/50"
               >
-                <SettingsIcon className="w-8 h-8"/>
+                Não, sou menor de 18
               </button>
             </div>
           </div>
         );
+      case GameStatus.NameInput:
+        const handleNameSubmit = (e: React.FormEvent) => {
+          e.preventDefault();
+          playUISFX('click');
+          setPlayerName(nameInputValue.trim() || 'Pedro');
+          setGameStatus(GameStatus.Menu);
+        }
+        return (
+          <div className="text-center text-white flex flex-col items-center gap-6 p-4">
+            <h1 className="text-5xl font-bold">Crie seu Avatar</h1>
+            <p className="text-xl max-w-2xl text-white/80">
+              Qual o nome do seu avatar para esta simulação?
+            </p>
+            <form onSubmit={handleNameSubmit} className="mt-6 flex flex-col items-center gap-4 w-full max-w-sm">
+              <input
+                type="text"
+                value={nameInputValue}
+                onChange={(e) => setNameInputValue(e.target.value)}
+                placeholder="Digite um nome..."
+                className="w-full px-4 py-3 bg-black/30 border border-white/20 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-pink-400"
+                aria-label="Nome do Avatar"
+              />
+              <button type="submit" className="px-12 py-3 text-lg font-bold text-white bg-pink-600 rounded-lg shadow-lg hover:bg-pink-700 transition-transform transform hover:scale-105 border-2 border-pink-400/50">
+                Continuar
+              </button>
+            </form>
+          </div>
+        );
+      case GameStatus.Menu:
+        return <FantasyMenu onFantasySelect={startGame} playUISFX={playUISFX} onOpenSettings={handleOpenSettings}/>;
       case GameStatus.Won:
       case GameStatus.Lost:
         stopTimer();
@@ -357,7 +435,14 @@ const App: React.FC = () => {
                 <h1 className="text-5xl font-bold">{gameStatus === GameStatus.Won ? 'Vitória!' : 'Fim de Jogo!'}</h1>
                 <p className="text-xl max-w-2xl text-white/80 bg-black/40 p-4 rounded-lg">{endMessage}</p>
                 <button
-                    onClick={startGame}
+                    onClick={() => {
+                        playUISFX('click');
+                        if (currentFantasy) {
+                            startGame(currentFantasy);
+                        } else {
+                            setGameStatus(GameStatus.Menu);
+                        }
+                    }}
                     className="mt-4 px-12 py-4 text-xl font-bold text-white bg-gray-600 rounded-lg shadow-lg hover:bg-gray-700 transition-transform transform hover:scale-105"
                 >
                     Jogar Novamente
@@ -375,7 +460,7 @@ const App: React.FC = () => {
                   <h2 className="text-2xl font-bold text-white">Status</h2>
                 </div>
                 <button 
-                  onClick={() => setIsSettingsOpen(true)} 
+                  onClick={handleOpenSettings} 
                   className="text-white/70 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
                   aria-label="Abrir configurações de áudio"
                 >
@@ -411,7 +496,7 @@ const App: React.FC = () => {
                 excitementLevel={excitement}
                 excitementFeedback={excitementFeedback} 
               />
-              <OptionsComponent options={scene.options} onOptionSelect={handleOptionSelect} disabled={gameStatus === GameStatus.Loading} onOptionHover={speak} />
+              <OptionsComponent options={scene.options} onOptionSelect={handleOptionSelect} disabled={gameStatus === GameStatus.Loading} onOptionHover={handleOptionHover} />
             </main>
           </div>
         );
@@ -427,13 +512,14 @@ const App: React.FC = () => {
       
       <SettingsModal
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onClose={handleCloseSettings}
         ambientVolume={ambientVolume}
         setAmbientVolume={handleAmbientVolumeChange}
         toggleAmbientMute={toggleAmbientMute}
         sfxVolume={sfxVolume}
         setSfxVolume={handleSfxVolumeChange}
         toggleSfxMute={toggleSfxMute}
+        playUISFX={playUISFX}
       />
 
       <div className="content-wrapper min-h-screen w-full bg-slate-900/50 backdrop-blur-sm flex items-center justify-center">

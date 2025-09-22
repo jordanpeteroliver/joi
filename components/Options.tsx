@@ -20,8 +20,11 @@ const Options: React.FC<OptionsProps> = ({ options, onOptionSelect, disabled, on
           onTouchStart={() => onOptionHover(option.text)}
           disabled={disabled}
           className="w-full text-white text-md font-medium px-6 py-3 rounded-lg border border-white/20 bg-black/30 backdrop-blur-sm
-                     hover:bg-white/10 hover:border-white/40 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50
-                     transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black/30"
+                     transition-all duration-200
+                     hover:bg-white/10 hover:border-white/40 hover:scale-[1.02] hover:shadow-lg hover:shadow-pink-500/40
+                     active:scale-[0.98] active:bg-black/50 active:shadow-inner
+                     focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-opacity-50
+                     disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black/30 disabled:hover:scale-100 disabled:hover:shadow-none"
         >
           {option.text}
         </button>

@@ -12,6 +12,7 @@ interface SettingsModalProps {
   sfxVolume: number;
   setSfxVolume: (volume: number) => void;
   toggleSfxMute: () => void;
+  playUISFX: (key: 'click' | 'hover' | 'open' | 'close') => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -23,11 +24,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   sfxVolume,
   setSfxVolume,
   toggleSfxMute,
+  playUISFX,
 }) => {
   if (!isOpen) return null;
 
   const isAmbientMuted = ambientVolume === 0;
   const isSfxMuted = sfxVolume === 0;
+
+  const handleToggleAmbient = () => {
+    playUISFX('click');
+    toggleAmbientMute();
+  }
+
+  const handleToggleSfx = () => {
+    playUISFX('click');
+    toggleSfxMute();
+  }
 
   return (
     <div
@@ -57,7 +69,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="flex flex-col gap-3">
           <label htmlFor="ambient-volume" className="text-xl text-white/90">Som Ambiente</label>
           <div className="flex items-center gap-4">
-            <button onClick={toggleAmbientMute} aria-label={isAmbientMuted ? "Ativar som ambiente" : "Desativar som ambiente"}>
+            <button onClick={handleToggleAmbient} aria-label={isAmbientMuted ? "Ativar som ambiente" : "Desativar som ambiente"}>
               {isAmbientMuted ? <SpeakerOffIcon className="w-6 h-6 text-white/70 hover:text-white" /> : <SpeakerOnIcon className="w-6 h-6 text-white/70 hover:text-white" />}
             </button>
             <input
@@ -77,7 +89,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="flex flex-col gap-3">
           <label htmlFor="sfx-volume" className="text-xl text-white/90">Efeitos Sonoros (SFX)</label>
           <div className="flex items-center gap-4">
-            <button onClick={toggleSfxMute} aria-label={isSfxMuted ? "Ativar efeitos sonoros" : "Desativar efeitos sonoros"}>
+            <button onClick={handleToggleSfx} aria-label={isSfxMuted ? "Ativar efeitos sonoros" : "Desativar efeitos sonoros"}>
               {isSfxMuted ? <SpeakerOffIcon className="w-6 h-6 text-white/70 hover:text-white" /> : <SpeakerOnIcon className="w-6 h-6 text-white/70 hover:text-white" />}
             </button>
             <input
