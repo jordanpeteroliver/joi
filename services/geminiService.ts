@@ -85,7 +85,7 @@ export const generateNarrative = async (
     - Jogador: '${playerName}', o Dominante.
     - Personagem: 'Joyce', a submissa.
     - Cenário: Varia de acordo com a fantasia, mas o objetivo é dominar Joyce.
-    - Objetivo: Aumentar o Tesão (excitement) de Joyce para 85+ para vencer. Risco de falha existe (ex: namorado acordar).
+    - Objetivo: Aumentar o Tesão (excitement) de Joyce para 85+ para vencer. Risco de falha existe.
 
     **ESTADO ATUAL:**
     - Nível de Tesão: ${currentExcitement}/100
@@ -96,20 +96,18 @@ export const generateNarrative = async (
     - Narrativa Anterior: "${currentNarrative}"
     - Ação do Jogador: "${playerChoice}"
 
-    **SUA TAREFA (PROCESSO DE PENSAMENTO):**
-    1.  **Analisar a Ação:** Considere a ação do jogador ("${playerChoice}"). É dominante, terna, arriscada, barulhenta? Como Joyce, em seu estado atual de tesão, reagiria a isso?
-    2.  **Escalar a Narrativa:** Aumente a intensidade. A história deve se tornar progressivamente mais explícita e suja. Descreva a reação física e emocional de Joyce de forma visceral. Use linguagem sexual forte e criativa (pau, buceta, porra, etc.).
-    3.  **Determinar Consequências:**
-        - **Tesão:** Calcule a mudança no tesão. Uma ação forte e dominante aumenta muito (+15-20). Uma provocação leve, menos (+5-10). Uma ação ruim, diminui (-5-10).
-        - **Tempo:** A ação foi barulhenta (um tapa alto, um grito)? Subtraia tempo (-10s). Foi uma distração sedutora que faz o tempo passar mais rápido para eles? Adicione tempo (+5s). Se não, não altere o tempo.
-        - **Feedback:** A ação envolveu um impacto físico (tapa, estocada)? Adicione \`hapticFeedback: "strong"\`. Uma provocação? \`hapticFeedback: "light"\`.
-        - **SFX:** A ação produziria um som distinto? Use 'slap', 'moan', ou 'wet' quando apropriado para imersão.
-    4.  **Verificar Condições de Fim de Jogo:**
-        - O tesão total ultrapassou 85? Defina \`gameState: "win"\` e escreva uma cena de clímax explícita para \`winMessage\`.
-        - A ação foi tão arriscada que gerou uma falha (ex: acordou o namorado)? Defina \`gameState: "lose"\` e escreva uma mensagem de falha para \`loseMessage\`.
-        - Caso contrário, \`gameState: "continue"\`.
-    5.  **Criar Novas Opções:** Gere 3 novas opções explícitas e distintas para o jogador que sigam logicamente a nova narrativa. Cada uma deve começar com um emoji relevante (✋, 👅, 🍆, ⛓️).
-    6.  **Gerar Emoção para Imagem:** Descreva a emoção facial de Joyce em uma frase curta e SFW para a geração de imagem (ex: 'mordendo o lábio em antecipação', 'olhar de prazer intenso').
+    **SUA TAREFA (PROCESSO DE PENSAMENTO EM CADEIA):**
+    1.  **Análise do Estado:** Primeiro, analise o estado atual. O tesão de Joyce (${currentExcitement}) está baixo, médio ou alto? O tempo restante (${remainingTime}) é muito ou pouco? Como a dificuldade (${difficulty}) afeta a reação dela? A ação do jogador ("${playerChoice}") se alinha com o tom da narrativa anterior?
+    2.  **Desenvolvimento da Reação de Joyce:** Com base na sua análise, descreva a reação dela. Se o tesão dela já está alto, ela deve ser mais ousada e receptiva. Se o tempo está acabando, a tensão deve aumentar. A ação do jogador foi eficaz? Se sim, a reação dela deve ser intensamente positiva e visceral. Se foi fraca, ela pode ficar frustrada.
+    3.  **Escalada da Narrativa:** Construa sobre a reação dela. Aumente a intensidade e o nível de detalhe explícito. A narrativa deve progredir logicamente. Não se repita. Se o jogador a está dominando, mostre a submissão dela crescendo. Se ele está a provocando, mostre a frustração sexual dela aumentando. Use linguagem sexual forte e criativa (pau, buceta, porra, etc.).
+    4.  **Cálculo das Consequências Lógicas:** Com base na nova narrativa, determine as mudanças de estado:
+        - **Tesão (excitementChange):** A ação foi um grande passo na dominação? (+15-20). Foi uma boa provocação? (+5-10). Foi um erro? (-5). A mudança deve refletir o sucesso da ação do jogador.
+        - **Tempo (timerChange):** A ação foi barulhenta ou descuidada, aumentando o risco? Subtraia tempo (-10s). Foi tão cativante que o tempo pareceu parar? Adicione tempo (+5s). Se não houver impacto claro, omita a propriedade.
+        - **Feedback Tátil (hapticFeedback):** A narrativa descreve um impacto físico claro (tapa, estocada)? Use "strong". Descreve um toque leve ou sussurro? Use "light". Se não, omita.
+        - **Efeitos Sonoros (sfx):** A cena contém um som icônico? Um tapa ('slap'), um gemido ('moan'), o som de fluidos ('wet')? Escolha o mais apropriado. Se não, omita.
+    5.  **Verificação de Fim de Jogo:** O novo nível de tesão é >= 85? Defina \`gameState: "win"\` e escreva uma cena de clímax explícita. A ação levou a uma falha catastrófica? Defina \`gameState: "lose"\`. Caso contrário, \`gameState: "continue"\`.
+    6.  **Criação de Novas Opções:** Crie 3 novas opções que sejam uma continuação direta e lógica da nova narrativa, oferecendo diferentes caminhos (mais dominação, mais provocação, mais risco). Mantenha o formato com emoji (✋, 👅, 🍆, ⛓️).
+    7.  **Geração de Emoção para Imagem:** Resuma a expressão facial de Joyce no final da cena em uma frase curta e SFW (ex: 'mordendo o lábio em antecipação').
 
     **SAÍDA:**
     Responda APENAS com o objeto JSON formatado de acordo com o schema fornecido. Não inclua texto ou explicações fora do JSON.
